@@ -31,3 +31,25 @@ public class CheckoutPage {
         this.driver = driver;
         PageFactory.initElements(driver, this);
     }
+
+    public void checkButtClick() {checkoutButton.click();}
+
+    public void fillInfo(String fName, String lName, String zip) {
+        firstNameField.sendKeys(fName);
+        lastNameField.sendKeys(lName);
+        zipCodeField.sendKeys(zip);
+        continueButton.click();
+    }
+
+    public void finButtClick() {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.visibilityOf(finishButton));
+        finishButton.click();
+    }
+
+    // Метод для перевірки результату (Assert)
+    public String getSuccessMessage() {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        return successHeader.getText();
+    }
+}
