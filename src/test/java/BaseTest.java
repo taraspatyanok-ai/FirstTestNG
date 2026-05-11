@@ -1,6 +1,11 @@
 import io.github.bonigarcia.wdm.WebDriverManager;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -9,28 +14,32 @@ import java.time.Duration;
 public class BaseTest {
     protected WebDriver driver;
 
+    public void waitForElement(By locator) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.elementToBeClickable(locator));
+    }
+
     @BeforeMethod
     public void setUp() {
-        // 1. Автоматично підтягуємо драйвер Chrome
         WebDriverManager.chromedriver().setup();
 
-        // 2. Запускаємо браузер
-        driver = new ChromeDriver();
 
-        // 3. Налаштування: на весь екран та очікування елементів (щоб тест не падав відразу)
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--disable-features=PasswordLeakDetection");
+        options.addArguments("--disable-save-password-bubble");
+        options.addArguments("--incognito");
+
+        driver = new ChromeDriver(options);
+
         driver.manage().window().maximize();
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-
-        // 4. Переходимо на сайт
         driver.get("https://www.saucedemo.com");
     }
 
     @AfterMethod
     public void tearDown() {
-        // 5. Закриваємо браузер після кожного тесту
         if (driver != null) {
             driver.quit();
         }
     }
-}
 }
