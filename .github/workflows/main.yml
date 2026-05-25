@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ "master" ]
 
-# Налаштування прав для офіційного деплою безпосередньо в GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -38,25 +37,29 @@ jobs:
     - name: Install Allure CLI
       run: sudo npm install -g allure-commandline --unsafe-perm --silent
 
-    # Просто генеруємо свіжий звіт з результатів тестів
     - name: Generate Allure Report
       run: |
-        # Якщо папка порожня через падіння setUp, створюємо її, щоб Allure не сварився
         mkdir -p target/allure-results
         allure generate target/allure-results -o allure-report-dir --clean
         
-        # Перевіряємо наявність index.html. Якщо його немає — робимо тимчасову сторінку, щоб не було 404
         if [ ! -f "allure-report-dir/index.html" ]; then
           mkdir -p allure-report-dir
           echo "<h1>Allure Report: Тести запущено, але результати порожні. Перевірте лог mvn clean test.</h1>" > allure-report-dir/index.html
         fi
 
-    # Завантажуємо звіт як офіційний артефакт для сторінок Pages
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
       with:
         path: allure-report-dir
 
-    # Нативно деплоїмо його на сайт
+  # Виносимо деплой в окремий джоб, як цього вимагає безпека GitHub
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
     - name: Deploy Allure Report to GitHub Pages
+      id: deployment
       uses: actions/deploy-pages@v4
