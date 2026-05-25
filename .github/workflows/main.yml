@@ -28,12 +28,9 @@ jobs:
       run: mvn clean test
       continue-on-error: true
 
-    # Завантажуємо офіційний Allure CLI напряму в систему
+    # Надійне встановлення Allure CLI через пакетний менеджер npm
     - name: Install Allure CLI
-      run: |
-        curl -o allure-2.29.0.tgz -QsSL https://github.com
-        tar -zxf allure-2.29.0.tgz
-        sudo ln -s $(pwd)/allure-2.29.0/bin/allure /usr/bin/allure
+      run: sudo npm install -g allure-commandline --unsafe-perm
 
     # Скачуємо історію попередніх звітів, якщо вона є
     - name: Get Allure history
@@ -51,11 +48,11 @@ jobs:
           cp -r allure-history-old/history target/allure-results/
         fi
 
-    # Генеруємо звіт консольною командою без жодних докерів
+    # Генеруємо звіт консольною командою
     - name: Generate Allure Report
       run: |
         allure generate target/allure-results -o allure-report-dir --clean
-        # Якщо папка порожня (тести не створили джейсони), робимо заглушку, щоб деплой не падав
+        # Якщо папка порожня, робимо заглушку, щоб деплой не падав
         if [ ! -f "allure-report-dir/index.html" ]; then
           mkdir -p allure-report-dir
           echo "<h1>No tests were executed or allure-results is empty</h1>" > allure-report-dir/index.html
