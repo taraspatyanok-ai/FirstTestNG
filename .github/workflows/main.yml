@@ -12,43 +12,57 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      # Форсуємо використання актуальної версії Node за рекомендацією GitHub
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    # Оновлюємо версію Java до 25, як вимагає ваш pom.xml
+    - name: Set up JDK 25
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
-        distribution: 'temurin'
+        java-version: '25'
+        distribution: 'oracle' # Перемикаємо на Oracle JDK, оскільки він стабільно підтримує Java 25
         cache: maven
 
     - name: Run Tests with Maven
       run: mvn clean test
       continue-on-error: true
 
+    # Надійне встановлення Allure CLI через пакетний менеджер npm
+    - name: Install Allure CLI
+      run: sudo npm install -g allure-commandline --unsafe-perm
+
+    # Скачуємо історію попередніх звітів, якщо вона є
     - name: Get Allure history
       uses: actions/checkout@v4
-      if: always()
       with:
         ref: gh-pages
-        path: gh-pages
+        path: allure-history-old
+      continue-on-error: true
 
+    # Копіюємо історию в результати, щоб графіки в звіті працювали
+    - name: Copy Allure history to results
+      run: |
+        mkdir -p target/allure-results
+        if [ -d "allure-history-old/history" ]; then
+          cp -r allure-history-old/history target/allure-results/
+        fi
+
+    # Генеруємо звіт консольною командою
     - name: Generate Allure Report
-      uses: simple-elf/allure-report-action@master
-      if: always()
-      with:
-        allure_results: target/allure-results
-        allure_history: allure-history
+      run: |
+        allure generate target/allure-results -o allure-report-dir --clean
+        # Якщо папка порожня, робимо заглушку, щоб деплой не падав
+        if [ ! -f "allure-report-dir/index.html" ]; then
+          mkdir -p allure-report-dir
+          echo "<h1>No tests were executed or allure-results is empty</h1>" > allure-report-dir/index.html
+        fi
 
+    # Публікуємо готовий звіт в GitHub Pages
     - name: Deploy Allure Report to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
-      if: always()
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_branch: gh-pages
-        publish_dir: allure-history
+        publish_dir: allure-report-dir
