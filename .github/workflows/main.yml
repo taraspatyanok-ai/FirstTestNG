@@ -28,45 +28,43 @@ jobs:
       run: mvn clean test
       continue-on-error: true
 
+    # Завантажуємо офіційний Allure CLI напряму в систему
+    - name: Install Allure CLI
+      run: |
+        curl -o allure-2.29.0.tgz -QsSL https://github.com
+        tar -zxf allure-2.29.0.tgz
+        sudo ln -s $(pwd)/allure-2.29.0/bin/allure /usr/bin/allure
+
+    # Скачуємо історію попередніх звітів, якщо вона є
     - name: Get Allure history
       uses: actions/checkout@v4
-      if: always()
       with:
         ref: gh-pages
-        path: gh-pages
+        path: allure-history-old
       continue-on-error: true
 
-    # Проверяем, где лежат результаты, и создаем заглушку, если тесты не сгенерировали отчет
-    - name: Ensure Allure results directory exists
-      if: always()
+    # Копіюємо історию в результати, щоб графіки в звіті працювали
+    - name: Copy Allure history to results
       run: |
-        if [ ! -d "target/allure-results" ]; then
-          echo "Предупреждение: Папка target/allure-results не найдена. Создаем пустую структуру."
-          mkdir -p target/allure-results
+        mkdir -p target/allure-results
+        if [ -d "allure-history-old/history" ]; then
+          cp -r allure-history-old/history target/allure-results/
         fi
 
-    # Используем проверенную стабильную версию экшена simple-elf
+    # Генеруємо звіт консольною командою без жодних докерів
     - name: Generate Allure Report
-      uses: simple-elf/allure-report-action@v1.9
-      if: always()
-      with:
-        allure_results: target/allure-results
-        allure_history: allure-history
-        keep_reports: 20
-
-    # Проверяем, что папка allure-history точно создана и не пуста
-    - name: Ensure Allure history is not empty
-      if: always()
       run: |
-        mkdir -p allure-history
-        if [ -z "$(ls -A allure-history)" ]; then
-          echo "<h1>No reports generated yet</h1>" > allure-history/index.html
+        allure generate target/allure-results -o allure-report-dir --clean
+        # Якщо папка порожня (тести не створили джейсони), робимо заглушку, щоб деплой не падав
+        if [ ! -f "allure-report-dir/index.html" ]; then
+          mkdir -p allure-report-dir
+          echo "<h1>No tests were executed or allure-results is empty</h1>" > allure-report-dir/index.html
         fi
 
+    # Публікуємо готовий звіт в GitHub Pages
     - name: Deploy Allure Report to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
-      if: always()
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_branch: gh-pages
-        publish_dir: allure-history
+        publish_dir: allure-report-dir
