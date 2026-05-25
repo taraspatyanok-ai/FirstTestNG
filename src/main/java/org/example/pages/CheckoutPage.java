@@ -26,16 +26,6 @@ public class CheckoutPage {
     private WebElement finishButton;
     @FindBy(className = "complete-header")
     private WebElement successHeader;
-    /*
-    private By checkoutButton = By.xpath("//button[@id= 'checkout']");
-    private By firstNameField = By.xpath("//input[@id = 'first-name']");
-    private By lastNameField = By.xpath("//input[@id= 'last-name']");
-    private By zipCodeField = By.xpath("//input[@id= 'postal-code']");
-    private By continueButton = By.xpath("//input[@id= 'continue']");
-    private By finishButton = By.id("finish");
-    private By successHeader = By.className("complete-header"); // Додав для фінальної перевірки
-     */
-
 
     public CheckoutPage(WebDriver driver) {
         this.driver = driver;
@@ -57,8 +47,7 @@ public class CheckoutPage {
         finishButton.click();
     }
 
-    // Метод для перевірки результату (Assert)
-    public String getSuccessMessage() {
+        public String getSuccessMessage() {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         return successHeader.getText();
     }
