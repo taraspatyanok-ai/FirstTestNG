@@ -34,14 +34,34 @@ jobs:
       with:
         ref: gh-pages
         path: gh-pages
-      continue-on-error: true # Игнорируем ошибку, если ветки gh-pages еще нет
+      continue-on-error: true
 
+    # Проверяем, где лежат результаты, и создаем заглушку, если тесты не сгенерировали отчет
+    - name: Ensure Allure results directory exists
+      if: always()
+      run: |
+        if [ ! -d "target/allure-results" ]; then
+          echo "Предупреждение: Папка target/allure-results не найдена. Создаем пустую структуру."
+          mkdir -p target/allure-results
+        fi
+
+    # Используем проверенную стабильную версию экшена simple-elf
     - name: Generate Allure Report
-      uses: simple-elf/allure-report-action@master
+      uses: simple-elf/allure-report-action@v1.9
       if: always()
       with:
         allure_results: target/allure-results
         allure_history: allure-history
+        keep_reports: 20
+
+    # Проверяем, что папка allure-history точно создана и не пуста
+    - name: Ensure Allure history is not empty
+      if: always()
+      run: |
+        mkdir -p allure-history
+        if [ -z "$(ls -A allure-history)" ]; then
+          echo "<h1>No reports generated yet</h1>" > allure-history/index.html
+        fi
 
     - name: Deploy Allure Report to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
@@ -50,4 +70,3 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_branch: gh-pages
         publish_dir: allure-history
-        force_orphan: true #
