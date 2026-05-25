@@ -23,11 +23,16 @@ public class BaseTest {
     public void setUp() {
         WebDriverManager.chromedriver().setup();
 
-
         ChromeOptions options = new ChromeOptions();
+        options.addArguments("--incognito");
         options.addArguments("--disable-features=PasswordLeakDetection");
         options.addArguments("--disable-save-password-bubble");
-        options.addArguments("--incognito");
+
+        // НАЛАШТУВАННЯ ДЛЯ GITHUB ACTIONS (БЕЗГОЛОВИЙ РЕЖИМ)
+        options.addArguments("--headless=new"); // Запуск без графічного вікна
+        options.addArguments("--no-sandbox"); // Обхід обмежень безпеки Linux-контейнера
+        options.addArguments("--disable-dev-shm-usage"); // Запобігає падінню через брак пам'яті в Docker
+        options.addArguments("--window-size=1920,1080"); // Задаємо віртуальний екран, щоб елементи не злітали
 
         driver = new ChromeDriver(options);
 
