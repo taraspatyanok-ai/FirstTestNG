@@ -6,13 +6,15 @@ on:
   pull_request:
     branches: [ "master" ]
 
-# Глобально вимикаємо вивід попереджень про застарілі версії Node у консоль GitHub Actions
-env:
-  ACTIONS_STEP_DEBUG: false
-  ACTIONS_RUNNER_DEBUG: false
-
+# Налаштування прав для офіційного деплою безпосередньо в GitHub Pages
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   test:
@@ -36,31 +38,25 @@ jobs:
     - name: Install Allure CLI
       run: sudo npm install -g allure-commandline --unsafe-perm --silent
 
-    - name: Get Allure history
-      uses: actions/checkout@v4.2.2
-      with:
-        ref: gh-pages
-        path: allure-history-old
-      continue-on-error: true
-
-    - name: Copy Allure history to results
-      run: |
-        mkdir -p target/allure-results
-        if [ -d "allure-history-old/history" ]; then
-          cp -r allure-history-old/history target/allure-results/
-        fi
-
+    # Просто генеруємо свіжий звіт з результатів тестів
     - name: Generate Allure Report
       run: |
+        # Якщо папка порожня через падіння setUp, створюємо її, щоб Allure не сварився
+        mkdir -p target/allure-results
         allure generate target/allure-results -o allure-report-dir --clean
+        
+        # Перевіряємо наявність index.html. Якщо його немає — робимо тимчасову сторінку, щоб не було 404
         if [ ! -f "allure-report-dir/index.html" ]; then
           mkdir -p allure-report-dir
-          echo "<h1>No tests were executed or allure-results is empty</h1>" > allure-report-dir/index.html
+          echo "<h1>Allure Report: Тести запущено, але результати порожні. Перевірте лог mvn clean test.</h1>" > allure-report-dir/index.html
         fi
 
-    - name: Deploy Allure Report to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4.0.0
+    # Завантажуємо звіт як офіційний артефакт для сторінок Pages
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: gh-pages
-        publish_dir: allure-report-dir
+        path: allure-report-dir
+
+    # Нативно деплоїмо його на сайт
+    - name: Deploy Allure Report to GitHub Pages
+      uses: actions/deploy-pages@v4
