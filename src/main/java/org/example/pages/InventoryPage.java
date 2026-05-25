@@ -1,6 +1,5 @@
 package org.example.pages;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
@@ -18,7 +17,7 @@ public class InventoryPage {
 
     private By shopCartButton = By.className("shopping_cart_link");
 
-    public void addItemToCart(@NonNull String itemName) {
+    public void addItemToCart(String itemName) {
                 String dynamicId = "add-to-cart-sauce-labs-" + itemName.toLowerCase().replace(" ", "-");
         driver.findElement(By.id(dynamicId)).click();
     }
